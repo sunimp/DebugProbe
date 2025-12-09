@@ -162,7 +162,7 @@ DebugProbe/
 
 ## 与 DebugHub 配合使用
 
-DebugProbe 需要配合 [DebugHub](../DebugPlatform/DebugHub) 服务端使用：
+DebugProbe 需要配合 [DebugHub](https://github.com/sunimp/DebugPlatform) 服务端使用：
 
 1. 启动 DebugHub 服务器
 2. 在 iOS App 中配置 DebugProbe 连接到 DebugHub
@@ -185,4 +185,4 @@ MIT License
 
 ## 相关项目
 
-- [DebugPlatform](../DebugPlatform) - 完整的调试平台（包含 DebugHub 服务端和 Web UI）
+- [DebugPlatform](https://github.com/sunimp/DebugPlatform) - 完整的调试平台（包含 DebugHub 服务端和 Web UI）
