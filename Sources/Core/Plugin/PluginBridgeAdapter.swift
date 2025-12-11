@@ -52,6 +52,12 @@ public final class PluginBridgeAdapter: @unchecked Sendable {
         // 订阅 BridgeClient 的命令回调
         bridgeClient?.onPluginCommandReceived = { [weak self] pluginId, commandType, payloadObject in
             Task {
+                // 检查是否是系统命令（如 WebUI 插件状态同步）
+                if pluginId == "system" {
+                    self?.handleSystemCommand(commandType: commandType, payloadObject: payloadObject)
+                    return
+                }
+
                 // 将参数转换为 PluginCommand
                 var payload: Data?
                 if let payloadObject {
@@ -250,5 +256,51 @@ public final class PluginBridgeAdapter: @unchecked Sendable {
         } catch {
             DebugLog.error(.plugin, "Failed to encode DB command: \(error)")
         }
+    }
+
+    // MARK: - System Command Handling
+
+    /// 处理系统级命令（非插件命令）
+    /// - Parameters:
+    ///   - commandType: 命令类型
+    ///   - payloadObject: 命令负载
+    private func handleSystemCommand(commandType: String, payloadObject: Any?) {
+        switch commandType {
+        case "webui_plugin_state":
+            handleWebUIPluginStateCommand(payloadObject)
+        default:
+            DebugLog.warning(.plugin, "Unknown system command: \(commandType)")
+        }
+    }
+
+    /// 处理 WebUI 插件状态同步命令
+    /// - Parameter payloadObject: 包含 plugins 数组的字典
+    private func handleWebUIPluginStateCommand(_ payloadObject: Any?) {
+        guard let payload = payloadObject as? [String: Any],
+              let pluginsArray = payload["plugins"] as? [[String: Any]]
+        else {
+            DebugLog.warning(.plugin, "Invalid webui_plugin_state payload")
+            return
+        }
+
+        var states: [WebUIPluginState] = []
+        for pluginDict in pluginsArray {
+            guard
+                let pluginId = pluginDict["pluginId"] as? String,
+                let displayName = pluginDict["displayName"] as? String,
+                let isEnabled = pluginDict["isEnabled"] as? Bool
+            else {
+                continue
+            }
+            states.append(WebUIPluginState(
+                pluginId: pluginId,
+                displayName: displayName,
+                isEnabled: isEnabled
+            ))
+        }
+
+        // 更新 WebUI 插件状态管理器
+        WebUIPluginStateManager.shared.updateStates(states)
+        DebugLog.info(.plugin, "Received WebUI plugin states: \(states.count) plugins")
     }
 }

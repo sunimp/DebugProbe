@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var isEnabled: Bool = true
     @State private var verboseLogging: Bool = false
     @State private var connectionStatus: DebugProbeSettings.ConnectionStatusDetail?
+    @State private var webUIPluginStates: [WebUIPluginState] = []
     
     var body: some View {
         List {
@@ -134,16 +135,35 @@ struct SettingsView: View {
                 Text("操作")
             }
             
-            // MARK: - 5. 功能模块
+            // MARK: - 5. SDK 插件模块
             Section {
                 ForEach(pluginInfos, id: \.pluginId) { pluginInfo in
-                    FeatureRow(
-                        name: pluginInfo.displayName,
-                        enabled: pluginInfo.isEnabled
-                    )
+                    SDKPluginStatusRow(pluginInfo: pluginInfo)
                 }
             } header: {
-                Text("功能模块")
+                Text("SDK 插件模块")
+            } footer: {
+                Text("显示 DebugProbe SDK 本地插件的启用状态和运行状态")
+            }
+            
+            // MARK: - 5.1 WebUI 插件模块
+            Section {
+                if webUIPluginStates.isEmpty {
+                    Text("等待 WebUI 同步...")
+                        .foregroundStyle(.secondary)
+                        .font(.footnote)
+                } else {
+                    ForEach(webUIPluginStates, id: \.pluginId) { state in
+                        FeatureRow(
+                            name: state.displayName,
+                            enabled: state.isEnabled
+                        )
+                    }
+                }
+            } header: {
+                Text("WebUI 插件模块")
+            } footer: {
+                Text("显示 DebugHub WebUI 中各插件的启用状态。可在 WebUI 设置中管理。")
             }
             
             // MARK: - 6. 设备信息
@@ -207,6 +227,7 @@ struct SettingsView: View {
         .onAppear {
             loadSettings()
             updateConnectionStatus()
+            loadWebUIPluginStates()
         }
         .onReceive(NotificationCenter.default.publisher(for: DebugProbe.connectionStateDidChangeNotification)) { _ in
             updateConnectionStatus()
@@ -214,6 +235,9 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: DebugProbeSettings.configurationDidChangeNotification)) { _ in
             loadSettings()
             updateConnectionStatus()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: WebUIPluginStateManager.stateDidChangeNotification)) { _ in
+            loadWebUIPluginStates()
         }
     }
     
@@ -272,6 +296,10 @@ struct SettingsView: View {
         // 重置后重新连接
         DebugProbe.shared.reconnect()
     }
+    
+    private func loadWebUIPluginStates() {
+        webUIPluginStates = WebUIPluginStateManager.shared.getAllStates()
+    }
 }
 
 struct FeatureRow: View {
@@ -284,6 +312,67 @@ struct FeatureRow: View {
             Spacer()
             Image(systemName: enabled ? "checkmark.circle.fill" : "xmark.circle")
                 .foregroundStyle(enabled ? .green : .red)
+        }
+    }
+}
+
+// MARK: - SDKPluginStatusRow
+
+/// SDK 插件状态行（包含启用状态和运行状态）
+struct SDKPluginStatusRow: View {
+    let pluginInfo: PluginInfo
+
+    var body: some View {
+        HStack {
+            Text(pluginInfo.displayName)
+            Spacer()
+
+            // 运行状态标签
+            Text(stateText)
+                .font(.caption)
+                .foregroundStyle(stateColor)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(stateColor.opacity(0.15))
+                .cornerRadius(4)
+
+            // 启用状态图标
+            Image(systemName: pluginInfo.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
+                .foregroundStyle(pluginInfo.isEnabled ? .green : .red)
+        }
+    }
+
+    private var stateText: String {
+        switch pluginInfo.state {
+        case .uninitialized:
+            "未初始化"
+        case .starting:
+            "启动中"
+        case .running:
+            "运行中"
+        case .paused:
+            "已暂停"
+        case .stopping:
+            "停止中"
+        case .stopped:
+            "已停止"
+        case .error:
+            "错误"
+        }
+    }
+
+    private var stateColor: Color {
+        switch pluginInfo.state {
+        case .running:
+            .green
+        case .paused:
+            .orange
+        case .error:
+            .red
+        case .starting, .stopping:
+            .blue
+        case .uninitialized, .stopped:
+            .gray
         }
     }
 }
