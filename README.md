@@ -51,7 +51,7 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/sunimp/DebugProbe.git", from: "1.4.0")
+    .package(url: "https://github.com/sunimp/iOS-DebugProbe.git", from: "1.4.0")
 ]
 ```
 
