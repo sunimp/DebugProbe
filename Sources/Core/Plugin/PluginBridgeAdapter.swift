@@ -301,6 +301,5 @@ public final class PluginBridgeAdapter: @unchecked Sendable {
 
         // 更新 WebUI 插件状态管理器
         WebUIPluginStateManager.shared.updateStates(states)
-        DebugLog.info(.plugin, "Received WebUI plugin states: \(states.count) plugins")
     }
 }

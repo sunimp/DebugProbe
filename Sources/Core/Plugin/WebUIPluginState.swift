@@ -51,15 +51,14 @@ public final class WebUIPluginStateManager: @unchecked Sendable {
     /// - Parameter newStates: 新的状态列表
     public func updateStates(_ newStates: [WebUIPluginState]) {
         lock.lock()
-        defer { lock.unlock() }
-
         for state in newStates {
             states[state.pluginId] = state
         }
+        lock.unlock()
 
         DebugLog.info(.plugin, "WebUI plugin states updated: \(newStates.count) plugins")
 
-        // 发送通知
+        // 发送通知（在主线程）
         DispatchQueue.main.async {
             NotificationCenter.default.post(name: Self.stateDidChangeNotification, object: nil)
         }
