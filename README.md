@@ -1,6 +1,6 @@
 # DebugProbe
 
-移动 App 调试探针 SDK，用于实时捕获和分析 App 的网络请求、日志、数据库等调试信息。
+iOS App 调试探针 SDK，用于实时捕获和分析 App 的网络请求、日志、数据库等调试信息。
 
 > [!IMPORTANT]
 >
